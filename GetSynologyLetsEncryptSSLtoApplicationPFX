@@ -1,0 +1,27 @@
+#!/bin/bash
+# Must be executed under root
+# Put it on crontab the script below
+# Used to auto add SSL cert PFX to my plex server from auto generated let's encrypt cert
+# Could be used for any application that reverse proxy on synology is not enought !!!
+
+cd /usr/syno/etc/certificate/ReverseProxy
+DNS="YOUR_DNS_NAME_FROM_SYNOLOGY_SUBDOMAIN"
+
+
+OUT="YOUR_DNS_NAME_FROM_SYNOLOGY_SUBDOMAIN"
+# ie for my plex path : /volume1/Plex
+
+for i in $( ls -d */ );
+    do echo item: $i;
+    X=$( openssl x509 -in $i/cert.pem -noout -text | grep DNS) ;
+    echo "$X ( $i )";
+    if [[ $X =~ .*DNS:$DNS.* ]]
+    then
+        echo "MATCH !"
+        cd $i;
+        yes | openssl pkcs12 -in cert.pem -certfile fullchain.pem -certfile chain.pem -inkey privkey.pem -export -out $OUT/$DNS.pfx -passout pass:
+        chown plex:users $OUT/$DNS.pfx
+        cd ..;
+    fi
+
+done
